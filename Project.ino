@@ -48,7 +48,7 @@ int selectedOption = 0;
 const int numOptions = 4;
 
 const char *menuOptions[] = {
-  "Temperature Monitor",
+  "Temp Monitor",
   "Relay Control",
   "Light Monitor",
   "Sensor 3 Input"
@@ -148,85 +148,74 @@ void handleAccessGranted() {
 }
 
 //Menu access
-void handleMenu() 
-{
+void handleMenu() {
   char key = keypad.getKey();
 
-  if (key) 
-  {
-    if (key == '2') 
-    {
-      if (selectedOption > 0) 
-      {
-        selectedOption--;
-      }
-      clearAndUpdateDisplay();
-    }
-    else if (key == '8') 
-    {
-      if (selectedOption < numOptions - 1) {
-        selectedOption++;
-      }
-      clearAndUpdateDisplay();
-    } 
-    else if (key == '#') 
-      {
+  if (key) {
+    switch (key) {
+      case '2':
+        if (selectedOption > 0) {
+          selectedOption--;
+        }
+        clearAndUpdateDisplay();
+        break;
+
+      case '8':
+        if (selectedOption < numOptions - 1) {
+          selectedOption++;
+        }
+        clearAndUpdateDisplay();
+        break;
+
+      case '#':
         Serial.println(selectedOption);
         // Handle menu option based on selectedOption
-        if (selectedOption == 0) 
-        {
-          Serial.println("Case 0 accesed");
-          //Temperature Monitoring
-          lcd.clear();
-          lcd.setCursor(2,0);
-          lcd.print("Temperature:");
-          lcd.setCursor(1,1);
-          // Send the command for all devices on the bus to perform a temperature conversion:
-          sensors.requestTemperatures();
+        switch (selectedOption) {
+          case 0:
+            Serial.println("Case 0 accessed");
+            // Temperature Monitoring
+            lcd.clear();
+            lcd.setCursor(2, 0);
+            lcd.print("Temperature:");
+            lcd.setCursor(1, 1);
+            sensors.requestTemperatures();
+            float tempDigital = sensors.getTempCByIndex(0);
+            Serial.println(tempDigital);
+            lcd.print(tempDigital);
+            lcd.print("* Digital");
+            break;
 
-          //Digital temperature read
-          // Fetch the temperature in degrees Celsius for device index:
-          float tempDigital = sensors.getTempCByIndex(0); // the index 0 refers to the first device
+          case 1:
+            Serial.println("Case 1 accessed");
+            // Relay Control selected, add your code here
+            break;
 
-          Serial.println(tempDigital);
-          lcd.print(tempDigital);
-          lcd.print("* Digital");
+          case 2:
+            Serial.println("Case 2 accessed");
+            // Light Level Monitoring
+            lcd.clear();
+            lcd.setCursor(2, 0);
+            lcd.print("Light Level:");
+            lcd.setCursor(5, 1);
+            float lux = lightMeter.readLightLevel();
+            Serial.print("Light: ");
+            Serial.print(lux);
+            Serial.println(" lx");
+            lcd.print(lux);
+            lcd.print(" lx");
+            break;
+
+          case 3:
+            Serial.println("Case 3 accessed");
+            // Sensor 3 Input selected, add your code here
+            break;
         }
-        else if (selectedOption == 1) 
-        {
-          Serial.println("Case 1 accesed");
-          // Relay Control selected, add your code here
-        }
-        else if (selectedOption == 2) 
-        {
-          Serial.println("Case 2 accesed");
-          // Light Level Monitoring
-          lcd.clear();
-          lcd.setCursor(2, 0);
-          lcd.print("Light Level:");
-          lcd.setCursor(5, 1);
-                    
-          float lux = lightMeter.readLightLevel();
-          Serial.print("Light: ");
-          Serial.print(lux);
-          Serial.println(" lx");
-          
-          // Update the LCD screen with the light level
-          lcd.print(lux);
-          lcd.print(" lx");
-        }
-        else if (selectedOption == 3) 
-        {
-          Serial.println("Case 3 accesed");
-          // Sensor 3 Input selected, add your code here
-        }
-      }
-    } 
-    else if (key == '*') 
-    {
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Access granted");
-      currentState = ACCESS_GRANTED;
+        break;
     }
+  } else if (key == '*') {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Access granted");
+    currentState = ACCESS_GRANTED;
+  }
 }
