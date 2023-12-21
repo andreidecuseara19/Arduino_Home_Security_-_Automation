@@ -43,6 +43,8 @@ enum State {
 
 State currentState = ACCESS_DENIED;
 
+bool motorOption = false;
+
 int selectedOption = 0;
 
 const int numOptions = 4;
@@ -56,6 +58,7 @@ const char *menuOptions[] = {
 
 void setup() {
   Serial.begin(9600);
+  
   Wire.begin();
   lightMeter.begin();
   lcd.begin(16, 2);
@@ -66,6 +69,9 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Enter password:");
+  //Motor starts powered down
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
 }
 
 //Loop function
@@ -83,6 +89,7 @@ void loop() {
       handleMenu();
       break;
   }
+  delay(10);
 }
 
 //Refresh pentru LCD atunci cand se face scroll in meniu
@@ -150,28 +157,32 @@ void handleAccessGranted() {
 //Menu access
 void handleMenu() {
   char key = keypad.getKey();
-
   if (key) {
+  Serial.print("This is key: ");
+  Serial.println(key);
+  if (key!='*') {
     switch (key) {
-      case '2':
+      case '2':{
         if (selectedOption > 0) {
           selectedOption--;
         }
         clearAndUpdateDisplay();
         break;
-
-      case '8':
+      }
+      case '8':{
         if (selectedOption < numOptions - 1) {
           selectedOption++;
         }
         clearAndUpdateDisplay();
         break;
-
-      case '#':
+      }
+      case '#':{
+      
+        Serial.print("selectedOption: ");
         Serial.println(selectedOption);
         // Handle menu option based on selectedOption
         switch (selectedOption) {
-          case 0:
+          case 0:{
             Serial.println("Case 0 accessed");
             // Temperature Monitoring
             lcd.clear();
@@ -184,13 +195,14 @@ void handleMenu() {
             lcd.print(tempDigital);
             lcd.print("* Digital");
             break;
-
-          case 1:
+          }
+          case 1:{
             Serial.println("Case 1 accessed");
-            // Relay Control selected, add your code here
+            // Relay Control selected
+            
             break;
-
-          case 2:
+          }
+          case 2:{
             Serial.println("Case 2 accessed");
             // Light Level Monitoring
             lcd.clear();
@@ -203,19 +215,30 @@ void handleMenu() {
             Serial.println(" lx");
             lcd.print(lux);
             lcd.print(" lx");
+            if (lux>1000){
+              digitalWrite(13, HIGH);
+              
+            }
             break;
-
-          case 3:
+          }
+          case 3:{
             Serial.println("Case 3 accessed");
             // Sensor 3 Input selected, add your code here
-            break;
+            break; 
+          default: Serial.println("Wrong Key");
+          break;}
         }
-        break;
+      }
+        default: {Serial.println("Wron");
+          break;
+        }
     }
+  
   } else if (key == '*') {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Access granted");
     currentState = ACCESS_GRANTED;
+  }
   }
 }
