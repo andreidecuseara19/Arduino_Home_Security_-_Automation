@@ -1,4 +1,4 @@
-#include <dht.h> 
+#include <dht11.h>
 #include <Keypad.h>
 #include <LiquidCrystal.h>
 #include <DallasTemperature.h>
@@ -7,7 +7,7 @@
 
 
 #define DHT11_PIN 12  //Define pin for DHT_11
-dht DHT;       // Creates a DHT object
+dht11 DHT;       // Creates a DHT object
 
 BH1750 lightMeter; // initialize BH1750 object
 
@@ -260,11 +260,22 @@ void handleMenu() {
           case 3:{
             Serial.println("Case 3 accessed");
             // Sensor 3 Input selected, add your code here
-            int readData = DHT.read11(DHT11_PIN);
 
-            float t = DHT.temperature;        // Read temperature
-            float h = DHT.humidity;           // Read humidity
 
+int chk = DHT.read(DHT11_PIN);
+
+ Serial.print("Humidity (%): ");
+  Serial.println((float)DHT.humidity, 2);
+
+  Serial.print("Temperature  (C): ");
+  Serial.println((float)DHT.temperature, 2);
+
+            
+            //int readData = DHT.read(DHT11_PIN);
+
+            //float t = DHT.temperature;        // Read temperature
+            //float h = DHT.humidity;           // Read humidity
+/*
             Serial.print("Temperature = ");
             Serial.print(t);
             Serial.print("°C | ");
@@ -274,7 +285,7 @@ void handleMenu() {
             Serial.print(h);
             Serial.println("% ");
             Serial.println("");
-
+*/
             delay(2000); // wait two seconds
             break;
           } 
