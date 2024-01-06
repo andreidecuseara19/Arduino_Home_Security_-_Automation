@@ -6,23 +6,24 @@
 #include <BH1750.h>
 
 
-#define DHT11_PIN 12
-
+#define DHT11_PIN 12  //Define pin for DHT_11
 dht DHT;       // Creates a DHT object
 
 BH1750 lightMeter; // initialize BH1750 object
 
 // Define to which pin of the Arduino the 1-Wire bus is connected:
 #define ONE_WIRE_BUS 11
+
 // Create a new instance of the oneWire class to communicate with any OneWire device:
 OneWire oneWire(ONE_WIRE_BUS);
+
 // Pass the oneWire reference to DallasTemperature library:
 DallasTemperature sensors(&oneWire);
 
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
-LiquidCrystal lcd(10, 9, A0, A1, A2, A3);
+LiquidCrystal lcd(13, 9, A0, A1, A2, A3);
 
 const int ROW_NUM = 4;
 const int COLUMN_NUM = 3;
@@ -58,9 +59,9 @@ const int numOptions = 4;
 
 const char *menuOptions[] = {
   "Temp Monitor",
-  "Relay Control",
+  "Motor Control",
   "Light Monitor",
-  "Sensor 3 Input"
+  "Temp +& Hum In"
 };
 
 void setup() {
@@ -76,7 +77,23 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Enter password:");
+
+  setup_timer();
 }
+
+void setup_timer(){
+  TCCR1A = 0x00; // Registry initiaization
+  TCCR1A |= (1<<5); //Clear OC1B on compare match, set OC1B at BOTTOM (non-inverting mode)
+  TCCR1A |= (1<<1); //WGM11,
+  TCCR1A |= (1<<0); //WGM10 set to Fast PWM with OCR1A TOP
+  TCCR1B = 0x00; // Registry initialization
+  TCCR1B |= (1<<4) | (1<<3); //WGM13, WGM12 set to Fast PWM with OCR1A TOP
+  TCCR1B |= (1<<0); //CS10 set to no prescaling
+  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+  OCR1B = 0; // For a duty cycle of 0%
+  DDRB |= (1<<2); //DDRB |= 0b00000100 -- Setting pin PB2 corresponding to OC1B as output
+  }
+
 
 //Loop function
 void loop() {
@@ -204,6 +221,21 @@ void handleMenu() {
             Serial.println("Case 1 accessed");
             // Relay Control selected
             
+            Serial.println("factor 50%");
+            TCCR1B |= (1<<0);
+            OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+            OCR1B = 80; 
+            delay(5000);
+            Serial.println("factor 97%");
+            OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+            OCR1B = 155; 
+            delay(5000);
+            Serial.println("off");
+            //TCCR1B &= ~(1<<0);
+            Serial.println("factor 0%");
+            OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+            OCR1B = 0; 
+            delay(5000);
             break;
           }
           case 2:{
@@ -264,3 +296,46 @@ void handleMenu() {
   }
   }
 }
+
+
+/*
+void setup() {
+  // put your setup code here, to run once:
+  setup_timer();
+  Serial.begin(9600);
+}
+
+void setup_timer(){
+  TCCR1A = 0x00; // Registry initiaization
+  TCCR1A |= (1<<5); //Clear OC1B on compare match, set OC1B at BOTTOM (non-inverting mode)
+  TCCR1A |= (1<<1); //WGM11,
+  TCCR1A |= (1<<0); //WGM10 set to Fast PWM with OCR1A TOP
+  TCCR1B = 0x00; // Registry initialization
+  TCCR1B |= (1<<4) | (1<<3); //WGM13, WGM12 set to Fast PWM with OCR1A TOP
+  TCCR1B |= (1<<0); //CS10 set to no prescaling
+  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+  OCR1B = 80; // For a duty cycle of 50%
+  DDRB |= (1<<2); //DDRB |= 0b00000100 -- Setting pin PB2 corresponding to OC1B as output
+  }
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+  delay(5000);
+  Serial.println("factor 50%");
+  TCCR1B |= (1<<0);
+  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+  OCR1B = 80; 
+  delay(5000);
+  Serial.println("factor 97%");
+  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+  OCR1B = 155; 
+  delay(5000);
+  Serial.println("off");
+  //TCCR1B &= ~(1<<0);
+  Serial.println("factor 0%");
+  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+  OCR1B = 0; 
+
+}
+*/
