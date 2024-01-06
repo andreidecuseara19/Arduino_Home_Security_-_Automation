@@ -1,8 +1,14 @@
+#include <dht.h> 
 #include <Keypad.h>
 #include <LiquidCrystal.h>
 #include <DallasTemperature.h>
 #include <Wire.h>
 #include <BH1750.h>
+
+
+#define DHT11_PIN 12
+
+dht DHT;       // Creates a DHT object
 
 BH1750 lightMeter; // initialize BH1750 object
 
@@ -12,6 +18,7 @@ BH1750 lightMeter; // initialize BH1750 object
 OneWire oneWire(ONE_WIRE_BUS);
 // Pass the oneWire reference to DallasTemperature library:
 DallasTemperature sensors(&oneWire);
+
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
@@ -69,9 +76,6 @@ void setup() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Enter password:");
-  //Motor starts powered down
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
 }
 
 //Loop function
@@ -224,9 +228,27 @@ void handleMenu() {
           case 3:{
             Serial.println("Case 3 accessed");
             // Sensor 3 Input selected, add your code here
-            break; 
-          default: Serial.println("Wrong Key");
-          break;}
+            int readData = DHT.read11(DHT11_PIN);
+
+            float t = DHT.temperature;        // Read temperature
+            float h = DHT.humidity;           // Read humidity
+
+            Serial.print("Temperature = ");
+            Serial.print(t);
+            Serial.print("°C | ");
+            Serial.print((t*9.0)/5.0+32.0);        // Convert celsius to fahrenheit
+            Serial.println("°F ");
+            Serial.print("Humidity = ");
+            Serial.print(h);
+            Serial.println("% ");
+            Serial.println("");
+
+            delay(2000); // wait two seconds
+            break;
+          } 
+          default:{ Serial.println("Wrong Key");
+          break;
+          }
         }
       }
         default: {Serial.println("Wron");
