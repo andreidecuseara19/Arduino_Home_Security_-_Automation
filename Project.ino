@@ -1,29 +1,17 @@
-#include <dht11.h>
+#include <dht.h>
 #include <Keypad.h>
 #include <LiquidCrystal.h>
 #include <DallasTemperature.h>
 #include <Wire.h>
 #include <BH1750.h>
 
-
-#define DHT11_PIN 12  //Define pin for DHT_11
-dht11 DHT;       // Creates a DHT object
-
+#define DHT22_PIN 12
+dht DHT;       // Creates a DHT object
 BH1750 lightMeter; // initialize BH1750 object
-
-// Define to which pin of the Arduino the 1-Wire bus is connected:
-#define ONE_WIRE_BUS 11
-
-// Create a new instance of the oneWire class to communicate with any OneWire device:
-OneWire oneWire(ONE_WIRE_BUS);
-
-// Pass the oneWire reference to DallasTemperature library:
-DallasTemperature sensors(&oneWire);
-
-
-// initialize the library by associating any needed LCD interface pin
-// with the arduino pin number it is connected to
-LiquidCrystal lcd(13, 9, A0, A1, A2, A3);
+#define ONE_WIRE_BUS 11   // Define to which pin of the Arduino the 1-Wire bus is connected:
+OneWire oneWire(ONE_WIRE_BUS);    // Create a new instance of the oneWire class to communicate with any OneWire device:
+DallasTemperature sensors(&oneWire);    // Pass the oneWire reference to DallasTemperature library:
+LiquidCrystal lcd(13, 9, A0, A1, A2, A3);   // initialize the library by associating any needed LCD interface pin with the arduino pin number it is connected to
 
 const int ROW_NUM = 4;
 const int COLUMN_NUM = 3;
@@ -38,48 +26,31 @@ char keys[ROW_NUM][COLUMN_NUM] = {
 byte rowPins[ROW_NUM] = {8, 7, 6, 5};
 byte colPins[COLUMN_NUM] = {4, 3, 2};
 
-Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROW_NUM, COLUMN_NUM);
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROW_NUM, COLUMN_NUM); //Defining the keypad object with the pin numbers it is connected to
 
-const String password = "1234";
+const String password = "1234";   //Password needed for access
 String input_password;
 
 enum State {
   ACCESS_DENIED,
   ACCESS_GRANTED,
   MENU,
+  AUTO
 };
 
 State currentState = ACCESS_DENIED;
 
-bool motorOption = false;
-
 int selectedOption = 0;
 
-const int numOptions = 4;
+const int numOptions = 5;
 
 const char *menuOptions[] = {
   "Temp Monitor",
   "Motor Control",
   "Light Monitor",
-  "Temp +& Hum In"
+  "Temp & Hum In",
+  "Automatic"
 };
-
-void setup() {
-  Serial.begin(9600);
-  
-  Wire.begin();
-  lightMeter.begin();
-  lcd.begin(16, 2);
-  input_password.reserve(32);
-
-  sensors.begin();
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Enter password:");
-
-  setup_timer();
-}
 
 void setup_timer(){
   TCCR1A = 0x00; // Registry initiaization
@@ -90,10 +61,27 @@ void setup_timer(){
   TCCR1B |= (1<<4) | (1<<3); //WGM13, WGM12 set to Fast PWM with OCR1A TOP
   TCCR1B |= (1<<0); //CS10 set to no prescaling
   OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-  OCR1B = 0; // For a duty cycle of 0%
+  OCR1B = 0; // For a starting duty cycle of 0%
   DDRB |= (1<<2); //DDRB |= 0b00000100 -- Setting pin PB2 corresponding to OC1B as output
   }
 
+
+void setup() {
+  Serial.begin(9600);   //Initialize serial monitor
+
+  setup_timer();    //Setup for Motor registers
+  Wire.begin();  
+  lightMeter.begin();
+  lcd.begin(16, 2);
+  
+  input_password.reserve(32);
+
+  sensors.begin();
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Enter password:");
+}
 
 //Loop function
 void loop() {
@@ -108,6 +96,10 @@ void loop() {
 
     case MENU:
       handleMenu();
+      break;
+
+    case AUTO:
+      handleAuto();
       break;
   }
   delay(10);
@@ -126,6 +118,12 @@ void clearAndUpdateDisplay() {
       lcd.print(menuOptions[i]);
     }
   }
+}
+
+void handleAuto()
+{
+  lcd.clear();
+  lcd.print("Automatic Mode");
 }
 
 //Wrong Password was input
@@ -191,7 +189,7 @@ void handleMenu() {
         break;
       }
       case '8':{
-        if (selectedOption < numOptions - 1) {
+        if (selectedOption <= numOptions - 1) {
           selectedOption++;
         }
         clearAndUpdateDisplay();
@@ -202,8 +200,11 @@ void handleMenu() {
         Serial.print("selectedOption: ");
         Serial.println(selectedOption);
         // Handle menu option based on selectedOption
-        switch (selectedOption) {
-          case 0:{
+        switch (selectedOption) 
+        {
+          
+          case 0:
+          {
             Serial.println("Case 0 accessed");
             // Temperature Monitoring
             lcd.clear();
@@ -217,10 +218,11 @@ void handleMenu() {
             lcd.print("* Digital");
             break;
           }
-          case 1:{
+          
+          case 1:
+          {
             Serial.println("Case 1 accessed");
-            // Relay Control selected
-            
+            // Motor Control selected
             Serial.println("factor 50%");
             TCCR1B |= (1<<0);
             OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
@@ -234,11 +236,13 @@ void handleMenu() {
             //TCCR1B &= ~(1<<0);
             Serial.println("factor 0%");
             OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-            OCR1B = 0; 
-            delay(5000);
+            OCR1B = 0;
+            delay(5000); 
             break;
           }
-          case 2:{
+          
+          case 2:
+          {
             Serial.println("Case 2 accessed");
             // Light Level Monitoring
             lcd.clear();
@@ -251,31 +255,18 @@ void handleMenu() {
             Serial.println(" lx");
             lcd.print(lux);
             lcd.print(" lx");
-            if (lux>1000){
-              digitalWrite(13, HIGH);
-              
-            }
             break;
           }
-          case 3:{
+          
+          case 3:
+          {
             Serial.println("Case 3 accessed");
             // Sensor 3 Input selected, add your code here
+            int readData = DHT.read22(DHT22_PIN);
 
+            float t = DHT.temperature;        // Read temperature
+            float h = DHT.humidity;           // Read humidity
 
-int chk = DHT.read(DHT11_PIN);
-
- Serial.print("Humidity (%): ");
-  Serial.println((float)DHT.humidity, 2);
-
-  Serial.print("Temperature  (C): ");
-  Serial.println((float)DHT.temperature, 2);
-
-            
-            //int readData = DHT.read(DHT11_PIN);
-
-            //float t = DHT.temperature;        // Read temperature
-            //float h = DHT.humidity;           // Read humidity
-/*
             Serial.print("Temperature = ");
             Serial.print(t);
             Serial.print("°C | ");
@@ -285,16 +276,27 @@ int chk = DHT.read(DHT11_PIN);
             Serial.print(h);
             Serial.println("% ");
             Serial.println("");
-*/
+
             delay(2000); // wait two seconds
             break;
           } 
-          default:{ Serial.println("Wrong Key");
-          break;
+
+          case 4:
+          {
+            currentState = AUTO;
+            break;          
+          }
+
+          default:
+          { 
+            Serial.println("Wrong Key");
+            break;
           }
         }
       }
-        default: {Serial.println("Wron");
+        default: 
+        {
+          Serial.println("Default");
           break;
         }
     }
@@ -307,46 +309,3 @@ int chk = DHT.read(DHT11_PIN);
   }
   }
 }
-
-
-/*
-void setup() {
-  // put your setup code here, to run once:
-  setup_timer();
-  Serial.begin(9600);
-}
-
-void setup_timer(){
-  TCCR1A = 0x00; // Registry initiaization
-  TCCR1A |= (1<<5); //Clear OC1B on compare match, set OC1B at BOTTOM (non-inverting mode)
-  TCCR1A |= (1<<1); //WGM11,
-  TCCR1A |= (1<<0); //WGM10 set to Fast PWM with OCR1A TOP
-  TCCR1B = 0x00; // Registry initialization
-  TCCR1B |= (1<<4) | (1<<3); //WGM13, WGM12 set to Fast PWM with OCR1A TOP
-  TCCR1B |= (1<<0); //CS10 set to no prescaling
-  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-  OCR1B = 80; // For a duty cycle of 50%
-  DDRB |= (1<<2); //DDRB |= 0b00000100 -- Setting pin PB2 corresponding to OC1B as output
-  }
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
-  delay(5000);
-  Serial.println("factor 50%");
-  TCCR1B |= (1<<0);
-  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-  OCR1B = 80; 
-  delay(5000);
-  Serial.println("factor 97%");
-  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-  OCR1B = 155; 
-  delay(5000);
-  Serial.println("off");
-  //TCCR1B &= ~(1<<0);
-  Serial.println("factor 0%");
-  OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-  OCR1B = 0; 
-
-}
-*/
