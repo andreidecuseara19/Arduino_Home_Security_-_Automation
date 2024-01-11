@@ -91,19 +91,19 @@ void setup()
 void loop() 
 {
   switch (currentState) {
-    case ACCESS_DENIED:
+    case ACCESS_DENIED: //For when the input password is wrong
       handleAccessDenied();
       break;
 
     case ACCESS_GRANTED:
-      handleAccessGranted();
+      handleAccessGranted(); //For when the input password is correct
       break;
 
-    case MENU:
+    case MENU: //The menu used for reading sensor data and motor control
       handleMenu();
       break;
 
-    case AUTO:
+    case AUTO: //Handles the automatic start of the motor depending on the temperature
       handleAuto();
       break;
   }
@@ -136,19 +136,19 @@ void handleAuto()
   float tempDigital = sensors.getTempCByIndex(0);
   Serial.println(tempDigital);
   
-  if(tempDigital > 23.00 && tempDigital < 27.00)
+  if(tempDigital > 23.00 && tempDigital < 27.00) //Starts the fan at 75% speed when the temperature is between 23^C and 27^C
   {
-    OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+    OCR1A = 160; // To generate a PWM signal with period of 10 microseconds at a prescaler of 1
     OCR1B = 120; // For a duty cycle of 75%
   }
-  else if(tempDigital >= 27.00)
+  else if(tempDigital >= 27.00) //Speeds up the fan to 95% when the temperature rises above 27^C
   {
-    OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+    OCR1A = 160; // To generate a PWM signal with period of 10 microseconds at a prescaler of 1
     OCR1B = 155; // For a duty cycle of 95%
   }
-  else if(tempDigital <= 23.00)
+  else if(tempDigital <= 23.00) //Stops the fan when the teperature falls bellow 23^C
   {
-    OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
+    OCR1A = 160; // To generate a PWM signal with period of 10 microseconds at a prescaler of 1
     OCR1B = 0; // For a duty cycle of 0%
   }
   
@@ -260,24 +260,25 @@ void handleMenu()
           }
 
           // Motor Control selected
+          // Switches between fan speeds repeatedly with a delay of 5 seconds
           case 1:
           {
             Serial.println("Case 1 accessed");
             
             Serial.println("factor 50%");
             TCCR1B |= (1<<0);
-            OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-            OCR1B = 80; 
+            OCR1A = 160; // To generate a PWM signal with period of 10 microseconds at a prescaler of 1
+            OCR1B = 80; // For a duty cycle of 50%
             delay(5000);
             Serial.println("factor 97%");
-            OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-            OCR1B = 155; 
+            OCR1A = 160; // To generate a PWM signal with period of 10 microseconds at a prescaler of 1
+            OCR1B = 155; // For a duty cycle of 95%
             delay(5000);
             Serial.println("off");
             //TCCR1B &= ~(1<<0);
             Serial.println("factor 0%");
-            OCR1A = 160; // For a period of 10 microseconds and prescaler of 1
-            OCR1B = 0;
+            OCR1A = 160; // To generate a PWM signal with period of 10 microseconds at a prescaler of 1
+            OCR1B = 0;  //For a duty cycle of 0% -- aka stops the fan
             delay(5000); 
             break;
           }
